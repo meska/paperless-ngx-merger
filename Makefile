@@ -7,7 +7,7 @@ BINARY_NAME=paperless-merger
 MAIN_PATH=./cmd/paperless-merger
 BUILD_DIR=./build
 GO=go
-VERSION=0.1.0
+VERSION=0.1.2
 
 help: ## Mostra questo aiuto
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -71,20 +71,34 @@ version: ## Mostra la versione corrente
 
 bump-patch: ## Incrementa la versione patch (es. 0.1.0 -> 0.1.1)
 	@echo "📦 Aggiornamento versione patch..."
-	@NEW_VERSION=$$(echo $(VERSION) | awk -F. '{$$3 = $$3 + 1;} 1' OFS=.); \
-	sed -i '' "s/VERSION=.*/VERSION=$$NEW_VERSION/" Makefile; \
+	@CURRENT_VERSION=$$(echo $(VERSION) | cut -d. -f1-2); \
+	PATCH=$$(echo $(VERSION) | cut -d. -f3); \
+	NEW_PATCH=$$(($$PATCH + 1)); \
+	NEW_VERSION=$$CURRENT_VERSION.$$NEW_PATCH; \
+	sed -i '' "s/VERSION=$(VERSION)/VERSION=$$NEW_VERSION/" Makefile; \
+	git add Makefile; \
+	git commit -m "Bump version to $$NEW_VERSION"; \
 	echo "✅ Versione aggiornata a $$NEW_VERSION"
 
 bump-minor: ## Incrementa la versione minor (es. 0.1.0 -> 0.2.0)
 	@echo "📦 Aggiornamento versione minor..."
-	@NEW_VERSION=$$(echo $(VERSION) | awk -F. '{$$2 = $$2 + 1; $$3 = 0;} 1' OFS=.); \
-	sed -i '' "s/VERSION=.*/VERSION=$$NEW_VERSION/" Makefile; \
+	@MAJOR=$$(echo $(VERSION) | cut -d. -f1); \
+	MINOR=$$(echo $(VERSION) | cut -d. -f2); \
+	NEW_MINOR=$$(($$MINOR + 1)); \
+	NEW_VERSION=$$MAJOR.$$NEW_MINOR.0; \
+	sed -i '' "s/VERSION=$(VERSION)/VERSION=$$NEW_VERSION/" Makefile; \
+	git add Makefile; \
+	git commit -m "Bump version to $$NEW_VERSION"; \
 	echo "✅ Versione aggiornata a $$NEW_VERSION"
 
 bump-major: ## Incrementa la versione major (es. 0.1.0 -> 1.0.0)
 	@echo "📦 Aggiornamento versione major..."
-	@NEW_VERSION=$$(echo $(VERSION) | awk -F. '{$$1 = $$1 + 1; $$2 = 0; $$3 = 0;} 1' OFS=.); \
-	sed -i '' "s/VERSION=.*/VERSION=$$NEW_VERSION/" Makefile; \
+	@MAJOR=$$(echo $(VERSION) | cut -d. -f1); \
+	NEW_MAJOR=$$(($$MAJOR + 1)); \
+	NEW_VERSION=$$NEW_MAJOR.0.0; \
+	sed -i '' "s/VERSION=$(VERSION)/VERSION=$$NEW_VERSION/" Makefile; \
+	git add Makefile; \
+	git commit -m "Bump version to $$NEW_VERSION"; \
 	echo "✅ Versione aggiornata a $$NEW_VERSION"
 
 tag: ## Crea e pusha il tag git con la versione corrente
