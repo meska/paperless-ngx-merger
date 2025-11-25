@@ -1,0 +1,26 @@
+# Binaries
+paperless-merger
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Config file containing sensitive data
+config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
