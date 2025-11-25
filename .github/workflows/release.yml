@@ -8,6 +8,8 @@ on:
 
 permissions:
     contents: write
+    packages: write
+    pull-requests: write
 
 jobs:
     build:
@@ -108,10 +110,10 @@ jobs:
                   ls -la release/
 
             - name: Create Release
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@v2
               with:
-                  tag_name: ${{ steps.version.outputs.tag }}
-                  name: Release ${{ steps.version.outputs.tag }}
+                  tag_name: ${{ github.ref_name }}
+                  name: Release ${{ github.ref_name }}
                   draft: false
                   prerelease: false
                   generate_release_notes: true
