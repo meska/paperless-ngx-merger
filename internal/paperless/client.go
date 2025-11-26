@@ -39,11 +39,11 @@ type DocumentType struct {
 
 // Document rappresenta un documento di Paperless
 type Document struct {
-	ID               int    `json:"id"`
-	Title            string `json:"title"`
-	Correspondent    *int   `json:"correspondent"`
-	DocumentType     *int   `json:"document_type"`
-	Tags             []int  `json:"tags"`
+	ID            int    `json:"id"`
+	Title         string `json:"title"`
+	Correspondent *int   `json:"correspondent"`
+	DocumentType  *int   `json:"document_type"`
+	Tags          []int  `json:"tags"`
 }
 
 // ListResponse rappresenta la risposta paginata dell'API
@@ -77,82 +77,131 @@ func (c *Client) makeRequest(method, endpoint string, body io.Reader) (*http.Res
 	return c.client.Do(req)
 }
 
-// GetTags recupera tutti i tags
+// GetTags recupera tutti i tags con paginazione automatica
 func (c *Client) GetTags() ([]Tag, error) {
-	resp, err := c.makeRequest("GET", "/api/tags/?page_size=100", nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	var allTags []Tag
+	endpoint := "/api/tags/?page_size=1000"
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+	for endpoint != "" {
+		resp, err := c.makeRequest("GET", endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+		
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+		}
+
+		var listResp ListResponse
+		if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+		resp.Body.Close()
+
+		var tags []Tag
+		if err := json.Unmarshal(listResp.Results, &tags); err != nil {
+			return nil, err
+		}
+
+		allTags = append(allTags, tags...)
+
+		// Se c'è una pagina successiva, prepara l'endpoint per la prossima iterazione
+		if listResp.Next != nil && *listResp.Next != "" {
+			// Estrai solo il path e la query dall'URL completo
+			endpoint = strings.TrimPrefix(*listResp.Next, c.BaseURL)
+		} else {
+			endpoint = ""
+		}
 	}
 
-	var listResp ListResponse
-	if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
-		return nil, err
-	}
-
-	var tags []Tag
-	if err := json.Unmarshal(listResp.Results, &tags); err != nil {
-		return nil, err
-	}
-
-	return tags, nil
+	return allTags, nil
 }
 
-// GetCorrespondents recupera tutti i corrispondenti
+// GetCorrespondents recupera tutti i corrispondenti con paginazione automatica
 func (c *Client) GetCorrespondents() ([]Correspondent, error) {
-	resp, err := c.makeRequest("GET", "/api/correspondents/?page_size=100", nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	var allCorrespondents []Correspondent
+	endpoint := "/api/correspondents/?page_size=1000"
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+	for endpoint != "" {
+		resp, err := c.makeRequest("GET", endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+		
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+		}
+
+		var listResp ListResponse
+		if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+		resp.Body.Close()
+
+		var correspondents []Correspondent
+		if err := json.Unmarshal(listResp.Results, &correspondents); err != nil {
+			return nil, err
+		}
+
+		allCorrespondents = append(allCorrespondents, correspondents...)
+
+		// Se c'è una pagina successiva, prepara l'endpoint per la prossima iterazione
+		if listResp.Next != nil && *listResp.Next != "" {
+			endpoint = strings.TrimPrefix(*listResp.Next, c.BaseURL)
+		} else {
+			endpoint = ""
+		}
 	}
 
-	var listResp ListResponse
-	if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
-		return nil, err
-	}
-
-	var correspondents []Correspondent
-	if err := json.Unmarshal(listResp.Results, &correspondents); err != nil {
-		return nil, err
-	}
-
-	return correspondents, nil
+	return allCorrespondents, nil
 }
 
-// GetDocumentTypes recupera tutti i tipi di documento
+// GetDocumentTypes recupera tutti i tipi di documento con paginazione automatica
 func (c *Client) GetDocumentTypes() ([]DocumentType, error) {
-	resp, err := c.makeRequest("GET", "/api/document_types/?page_size=100", nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	var allDocTypes []DocumentType
+	endpoint := "/api/document_types/?page_size=1000"
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+	for endpoint != "" {
+		resp, err := c.makeRequest("GET", endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+		
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+		}
+
+		var listResp ListResponse
+		if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+		resp.Body.Close()
+
+		var docTypes []DocumentType
+		if err := json.Unmarshal(listResp.Results, &docTypes); err != nil {
+			return nil, err
+		}
+
+		allDocTypes = append(allDocTypes, docTypes...)
+
+		// Se c'è una pagina successiva, prepara l'endpoint per la prossima iterazione
+		if listResp.Next != nil && *listResp.Next != "" {
+			endpoint = strings.TrimPrefix(*listResp.Next, c.BaseURL)
+		} else {
+			endpoint = ""
+		}
 	}
 
-	var listResp ListResponse
-	if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
-		return nil, err
-	}
-
-	var docTypes []DocumentType
-	if err := json.Unmarshal(listResp.Results, &docTypes); err != nil {
-		return nil, err
-	}
-
-	return docTypes, nil
+	return allDocTypes, nil
 }
 
 // UpdateTag aggiorna un tag
@@ -256,46 +305,62 @@ func (c *Client) DeleteDocumentType(id int) error {
 
 // GetDocumentsByTag recupera tutti i documenti che hanno un certo tag
 func (c *Client) GetDocumentsByTag(tagID int) ([]Document, error) {
-	endpoint := fmt.Sprintf("/api/documents/?tags__id__in=%d&page_size=100", tagID)
+	endpoint := fmt.Sprintf("/api/documents/?tags__id__in=%d&page_size=1000", tagID)
 	return c.getDocuments(endpoint)
 }
 
 // GetDocumentsByCorrespondent recupera tutti i documenti di un corrispondente
 func (c *Client) GetDocumentsByCorrespondent(correspondentID int) ([]Document, error) {
-	endpoint := fmt.Sprintf("/api/documents/?correspondent__id=%d&page_size=100", correspondentID)
+	endpoint := fmt.Sprintf("/api/documents/?correspondent__id=%d&page_size=1000", correspondentID)
 	return c.getDocuments(endpoint)
 }
 
 // GetDocumentsByType recupera tutti i documenti di un tipo
 func (c *Client) GetDocumentsByType(typeID int) ([]Document, error) {
-	endpoint := fmt.Sprintf("/api/documents/?document_type__id=%d&page_size=100", typeID)
+	endpoint := fmt.Sprintf("/api/documents/?document_type__id=%d&page_size=1000", typeID)
 	return c.getDocuments(endpoint)
 }
 
-// getDocuments è un helper per recuperare documenti
-func (c *Client) getDocuments(endpoint string) ([]Document, error) {
-	resp, err := c.makeRequest("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+// getDocuments è un helper per recuperare documenti con paginazione automatica
+func (c *Client) getDocuments(initialEndpoint string) ([]Document, error) {
+	var allDocuments []Document
+	endpoint := initialEndpoint
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+	for endpoint != "" {
+		resp, err := c.makeRequest("GET", endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("errore API: %d - %s", resp.StatusCode, string(body))
+		}
+
+		var listResp ListResponse
+		if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+		resp.Body.Close()
+
+		var documents []Document
+		if err := json.Unmarshal(listResp.Results, &documents); err != nil {
+			return nil, err
+		}
+
+		allDocuments = append(allDocuments, documents...)
+
+		// Se c'è una pagina successiva, prepara l'endpoint per la prossima iterazione
+		if listResp.Next != nil && *listResp.Next != "" {
+			endpoint = strings.TrimPrefix(*listResp.Next, c.BaseURL)
+		} else {
+			endpoint = ""
+		}
 	}
 
-	var listResp ListResponse
-	if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
-		return nil, err
-	}
-
-	var documents []Document
-	if err := json.Unmarshal(listResp.Results, &documents); err != nil {
-		return nil, err
-	}
-
-	return documents, nil
+	return allDocuments, nil
 }
 
 // UpdateDocumentTags aggiorna i tags di un documento

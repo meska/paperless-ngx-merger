@@ -23,6 +23,7 @@ config.json
 # IDE
 .vscode/
 .idea/
+.github/copilot-instructions.md
 *.swp
 *.swo
 *~

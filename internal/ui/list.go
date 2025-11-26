@@ -41,6 +41,8 @@ type ListModel struct {
 	searchInput   textinput.Model // Per filtrare nella modalità manuale
 	progress      progress.Model
 	currentGroup  *similarity.SimilarityGroup
+	width         int // Larghezza del terminale
+	height        int // Altezza del terminale
 }
 
 type loadedMsg struct {
@@ -100,11 +102,15 @@ func NewListModel(cfg *config.Config, loc *locale.Localizer, entityType EntityTy
 		mergeInput:  input,
 		searchInput: searchInput,
 		progress:    prog,
+		width:       80,  // Valori di default ragionevoli
+		height:      24,  // Saranno aggiornati dal WindowSizeMsg
 	}
 }
 
 func (m ListModel) Init() tea.Cmd {
-	return m.loadData
+	return tea.Batch(
+		m.loadData,
+	)
 }
 
 func (m ListModel) loadData() tea.Msg {
@@ -161,6 +167,11 @@ func (m ListModel) loadData() tea.Msg {
 
 func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
+
 	case loadedMsg:
 		m.loading = false
 		if msg.err != nil {
@@ -770,8 +781,12 @@ func (m ListModel) View() string {
 		if len(m.filteredItems) == 0 {
 			s += normalStyle.Render(m.localizer.T("list.manual_no_results")) + "\n"
 		} else {
-			// Mostra al massimo 15 elementi alla volta con scroll centrato
-			maxVisible := 15
+			// Calcola dinamicamente il numero di elementi visibili in base all'altezza del terminale
+			// Sottrai 10 righe per header, search, help, ecc.
+			maxVisible := m.height - 10
+			if maxVisible < 5 {
+				maxVisible = 5 // Minimo 5 elementi visibili
+			}
 			halfVisible := maxVisible / 2
 			
 			var startIdx, endIdx int
@@ -871,7 +886,46 @@ func (m ListModel) View() string {
 
 	s += normalStyle.Render(fmt.Sprintf(m.localizer.T("list.browse_found"), len(m.groups))) + "\n\n"
 
-	for i, group := range m.groups {
+	// Calcola dinamicamente il numero di gruppi visibili in base all'altezza del terminale
+	// Sottrai 8 righe per header, help, ecc.
+	maxVisible := m.height - 8
+	if maxVisible < 5 {
+		maxVisible = 5 // Minimo 5 gruppi visibili
+	}
+	halfVisible := maxVisible / 2
+	
+	var startIdx, endIdx int
+	
+	// Se ci sono meno gruppi del massimo visibile, mostra tutti
+	if len(m.groups) <= maxVisible {
+		startIdx = 0
+		endIdx = len(m.groups)
+	} else {
+		// Scroll centrato: mantieni il cursore al centro quando possibile
+		startIdx = m.cursor - halfVisible
+		
+		// Correggi se troppo in alto
+		if startIdx < 0 {
+			startIdx = 0
+		}
+		
+		// Correggi se troppo in basso
+		if startIdx > len(m.groups)-maxVisible {
+			startIdx = len(m.groups) - maxVisible
+		}
+		
+		endIdx = startIdx + maxVisible
+		if endIdx > len(m.groups) {
+			endIdx = len(m.groups)
+		}
+	}
+	
+	if startIdx > 0 {
+		s += normalStyle.Render(fmt.Sprintf("... (%d gruppi sopra) ...", startIdx)) + "\n"
+	}
+	
+	for i := startIdx; i < endIdx; i++ {
+		group := m.groups[i]
 		cursor := " "
 		line := fmt.Sprintf("%s [%d] %s", cursor, len(group.Items), group.Representative)
 		
@@ -881,6 +935,10 @@ func (m ListModel) View() string {
 		} else {
 			s += normalStyle.Render(line) + "\n"
 		}
+	}
+	
+	if endIdx < len(m.groups) {
+		s += normalStyle.Render(fmt.Sprintf("... (%d gruppi sotto) ...", len(m.groups)-endIdx)) + "\n"
 	}
 
 	s += "\n" + normalStyle.Render(m.localizer.T("list.browse_help")) + "\n"

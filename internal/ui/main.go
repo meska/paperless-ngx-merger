@@ -111,12 +111,20 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter", " ":
 			if m.showModeMenu {
-				// Seleziona modalità
-				m.mergeMode = MergeMode(m.cursor)
+				// Menu principale - prima scelta
+				if m.cursor == 0 {
+					// 🤖 Semi-automatica - vai a selezione entità
+					m.mergeMode = ModeSemiAutomatic
+					m.showModeMenu = false
+					m.cursor = 0
+				} else if m.cursor == 1 {
+					// ✋ Manuale - vai a selezione entità
+				m.mergeMode = ModeManual
 				m.showModeMenu = false
 				m.cursor = 0
+			}
 			} else {
-				// Seleziona entità
+				// Seleziona entità per merge
 				m.selected = EntityType(m.cursor)
 				m.showList = true
 				listModel := NewListModel(m.config, m.localizer, m.selected, m.mergeMode)
@@ -153,7 +161,7 @@ func (m MainModel) View() string {
 	s := titleStyle.Render(m.localizer.T("main.title")) + "\n\n"
 
 	if m.showModeMenu {
-		// Menu selezione modalità
+		// Menu principale
 		s += normalStyle.Render(m.localizer.T("main.select_mode")) + "\n\n"
 		
 		modeChoices := []string{

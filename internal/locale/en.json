@@ -23,6 +23,7 @@
     "main.entity_tags": "Tags",
     "main.entity_correspondents": "Correspondents",
     "main.entity_doctypes": "Document Types",
+    "main.entity_datefix": "Fix Document Dates",
     "main.help": "↑/↓: navigate • Enter: select • s: settings • q/Esc: exit",
     "list.title": "📋 %s with similar text",
     "list.loading": "⏳ Loading...",
