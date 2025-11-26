@@ -130,6 +130,7 @@ tag: ## Crea e pusha il tag git con la versione corrente
 
 github-release: build-all ## Crea una release su GitHub con i binari
 	@echo "📦 Preparazione release v$(VERSION) su GitHub..."
+	@rm -rf $(BUILD_DIR)/release
 	@mkdir -p $(BUILD_DIR)/release
 	@cd $(BUILD_DIR) && \
 		tar -czf release/$(BINARY_NAME)-darwin-amd64-v$(VERSION).tar.gz $(BINARY_NAME)-darwin-amd64 && \
