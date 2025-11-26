@@ -1,5 +1,7 @@
 # Binaries
 paperless-merger
+paperless-merger-*
+build/
 *.exe
 *.exe~
 *.dll

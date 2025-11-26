@@ -18,6 +18,24 @@ build: ## Compila l'applicazione
 	@$(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "✅ Compilazione completata: $(BUILD_DIR)/$(BINARY_NAME)"
 
+build-linux: ## Compila per Linux AMD64
+	@echo "🔨 Compilazione per Linux AMD64..."
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
+	@echo "✅ Compilazione completata: $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64"
+
+build-all: ## Compila per tutte le piattaforme (macOS, Linux)
+	@echo "🔨 Compilazione multi-piattaforma..."
+	@mkdir -p $(BUILD_DIR)
+	@echo "  • macOS AMD64..."
+	@GOOS=darwin GOARCH=amd64 $(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
+	@echo "  • macOS ARM64..."
+	@GOOS=darwin GOARCH=arm64 $(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
+	@echo "  • Linux AMD64..."
+	@GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
+	@echo "✅ Compilazione completata per tutte le piattaforme"
+	@ls -lh $(BUILD_DIR)/
+
 run: ## Esegue l'applicazione
 	@echo "🚀 Avvio applicazione..."
 	@$(GO) run $(MAIN_PATH)
@@ -107,13 +125,31 @@ tag: ## Crea e pusha il tag git con la versione corrente
 	@git push origin v$(VERSION)
 	@echo "✅ Tag v$(VERSION) creato e pushato"
 
-release-patch: bump-patch tag ## Incrementa patch, committa e crea tag
-	@echo "🚀 Release patch completata!"
+github-release: build-all ## Crea una release su GitHub con i binari
+	@echo "📦 Preparazione release v$(VERSION) su GitHub..."
+	@mkdir -p $(BUILD_DIR)/release
+	@cd $(BUILD_DIR) && \
+		tar -czf release/$(BINARY_NAME)-darwin-amd64-v$(VERSION).tar.gz $(BINARY_NAME)-darwin-amd64 && \
+		tar -czf release/$(BINARY_NAME)-darwin-arm64-v$(VERSION).tar.gz $(BINARY_NAME)-darwin-arm64 && \
+		tar -czf release/$(BINARY_NAME)-linux-amd64-v$(VERSION).tar.gz $(BINARY_NAME)-linux-amd64
+	@echo "📝 Generazione checksum..."
+	@cd $(BUILD_DIR)/release && \
+		shasum -a 256 *.tar.gz > checksums.txt
+	@echo "🚀 Creazione release su GitHub..."
+	@gh release create v$(VERSION) \
+		--title "Release v$(VERSION)" \
+		--generate-notes \
+		$(BUILD_DIR)/release/*.tar.gz \
+		$(BUILD_DIR)/release/checksums.txt
+	@echo "✅ Release v$(VERSION) pubblicata su GitHub!"
 
-release-minor: bump-minor tag ## Incrementa minor, committa e crea tag
-	@echo "🚀 Release minor completata!"
+release-patch: bump-patch github-release ## Incrementa patch, compila e pubblica release
+	@echo "🎉 Release patch v$(VERSION) completata!"
 
-release-major: bump-major tag ## Incrementa major, committa e crea tag
-	@echo "🚀 Release major completata!"
+release-minor: bump-minor github-release ## Incrementa minor, compila e pubblica release
+	@echo "🎉 Release minor v$(VERSION) completata!"
+
+release-major: bump-major github-release ## Incrementa major, compila e pubblica release
+	@echo "🎉 Release major v$(VERSION) completata!"
 
 .DEFAULT_GOAL := help
