@@ -96,6 +96,7 @@ bump-patch: ## Incrementa la versione patch (es. 0.1.0 -> 0.1.1)
 	sed -i '' "s/VERSION=$(VERSION)/VERSION=$$NEW_VERSION/" Makefile; \
 	git add Makefile; \
 	git commit -m "Bump version to $$NEW_VERSION"; \
+	git push; \
 	echo "✅ Versione aggiornata a $$NEW_VERSION"
 
 bump-minor: ## Incrementa la versione minor (es. 0.1.0 -> 0.2.0)
@@ -107,6 +108,7 @@ bump-minor: ## Incrementa la versione minor (es. 0.1.0 -> 0.2.0)
 	sed -i '' "s/VERSION=$(VERSION)/VERSION=$$NEW_VERSION/" Makefile; \
 	git add Makefile; \
 	git commit -m "Bump version to $$NEW_VERSION"; \
+	git push; \
 	echo "✅ Versione aggiornata a $$NEW_VERSION"
 
 bump-major: ## Incrementa la versione major (es. 0.1.0 -> 1.0.0)
@@ -117,6 +119,7 @@ bump-major: ## Incrementa la versione major (es. 0.1.0 -> 1.0.0)
 	sed -i '' "s/VERSION=$(VERSION)/VERSION=$$NEW_VERSION/" Makefile; \
 	git add Makefile; \
 	git commit -m "Bump version to $$NEW_VERSION"; \
+	git push; \
 	echo "✅ Versione aggiornata a $$NEW_VERSION"
 
 tag: ## Crea e pusha il tag git con la versione corrente
@@ -143,13 +146,16 @@ github-release: build-all ## Crea una release su GitHub con i binari
 		$(BUILD_DIR)/release/checksums.txt
 	@echo "✅ Release v$(VERSION) pubblicata su GitHub!"
 
-release-patch: bump-patch github-release ## Incrementa patch, compila e pubblica release
-	@echo "🎉 Release patch v$(VERSION) completata!"
+release-patch: bump-patch ## Incrementa patch, compila e pubblica release
+	@$(MAKE) github-release
+	@echo "🎉 Release patch completata!"
 
-release-minor: bump-minor github-release ## Incrementa minor, compila e pubblica release
-	@echo "🎉 Release minor v$(VERSION) completata!"
+release-minor: bump-minor ## Incrementa minor, compila e pubblica release
+	@$(MAKE) github-release
+	@echo "🎉 Release minor completata!"
 
-release-major: bump-major github-release ## Incrementa major, compila e pubblica release
-	@echo "🎉 Release major v$(VERSION) completata!"
+release-major: bump-major ## Incrementa major, compila e pubblica release
+	@$(MAKE) github-release
+	@echo "🎉 Release major completata!"
 
 .DEFAULT_GOAL := help
